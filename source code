@@ -1,0 +1,196 @@
+
+/*********************** WIFIConfiguration************************/
+#define WIFI_SSID       "*****"
+#define WIFI_PASS       "*****"
+/************************ Main Program Starts Here ************************/
+#include <ESP8266WiFi.h>
+#include <Adafruit_MQTT.h>
+#include <ArduinoHttpClient.h>
+
+//Adafruit io configuration
+#include "Adafruit_MQTT_Client.h"
+#define AIO_SERVER      "io.adafruit.com"
+#define AIO_SERVERPORT  1883
+#define AIO_USERNAME  "*****"
+#define AIO_KEY       "*****"
+WiFiClient client;
+Adafruit_MQTT_Client mqtt(&client, AIO_SERVER, AIO_SERVERPORT, AIO_USERNAME, AIO_KEY);
+Adafruit_MQTT_Subscribe voicecommands = Adafruit_MQTT_Subscribe(&mqtt, AIO_USERNAME "/feeds/voice-commands");
+boolean MQTT_connect() 
+{ 
+int8_t ret; 
+if (mqtt.connected()) {return true; } 
+uint8_t retries = 3;
+while ((ret = mqtt.connect()) != 0) 
+  {
+  mqtt.disconnect(); delay(2000);  retries--;
+  if (retries == 0) { return false; }
+  }
+return true;
+}
+void handlemessage(char* data);
+void frontside(int);
+void backside(int);
+void leftside(int);
+void rightside(int);
+
+// Defining pins
+#define ENB D3      //ENB
+#define MOTORB_1 D4 //IN3
+#define MOTORB_2 D5 //IN4
+#define MOTORA_1 D7 //IN1
+#define MOTORA_2 D6 //IN2
+#define ENA D8      //ENA
+
+// Setup
+void setup()
+{
+  // Configure pins
+  pinMode(ENA, OUTPUT);
+  pinMode(MOTORA_1, OUTPUT);
+  pinMode(MOTORA_2, OUTPUT);
+  pinMode(ENB, OUTPUT);
+  pinMode(MOTORB_1, OUTPUT);
+  pinMode(MOTORB_2, OUTPUT);
+// Start serial communication
+  Serial.begin(115200);
+
+// disable both motors
+  digitalWrite(ENA,LOW);
+  digitalWrite(ENB,LOW);
+
+//Connect to wifi
+ WiFi.mode(WIFI_STA);
+  WiFi.begin(WIFI_SSID,WIFI_PASS );
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+Serial.println("");
+  Serial.println("WiFi connected");
+  Serial.println("IP address: ");
+  Serial.println(WiFi.localIP());
+
+//Subscribe to voice commands feed
+ mqtt.subscribe(&voicecommands);
+}
+
+void loop()
+{	// read the command
+if (MQTT_connect()) {
+      Adafruit_MQTT_Subscribe *subscription_name;
+ while ((subscription_name = mqtt.readSubscription(5000))) {
+	if (subscription_name == &voicecommands){
+char* command= (char *)voicecommands.lastread;
+handleMessage(command);
+}}}
+}
+// this part of the code runs whenever there's a new message on Adafruit.io feed
+void handleMessage(char *data) {
+  String commandStr = String(data); // store the incoming commands in a string
+  // received message
+  Serial.print("received <- ");
+  Serial.println(commandStr);
+String cmd;
+  int angle;
+
+  // separate text and number ingredients
+  for (int i = 0; i < commandStr.length(); i++) {
+    if (commandStr.substring(i, i+1) == ":") {
+      cmd = commandStr.substring(0, i);
+      angle = commandStr.substring(i+1).toInt();
+      break;
+    }
+  }
+ // print command
+  Serial.println(cmd);
+  Serial.println(angle);
+
+  // perform movements
+  // LEFT
+  if (cmd.equalsIgnoreCase("left")){    
+   leftside(angle);
+  }
+  // RIGHT
+  if (cmd.equalsIgnoreCase("right")){    
+    rightside(angle);
+  }
+  // FORWARD
+  if (cmd.equalsIgnoreCase("forward")){    
+    frontside(angle);
+  }
+  // BACK
+  if (cmd.equalsIgnoreCase("back")){    
+    backside(angle);
+  }
+}
+void leftside(int angle)
+{
+ Serial.println("Turning left");
+    digitalWrite(ENA,HIGH);
+    digitalWrite(ENB,HIGH);
+    digitalWrite(MOTORA_1,HIGH);
+    digitalWrite(MOTORA_2,LOW);
+    digitalWrite(MOTORB_1,LOW);
+    digitalWrite(MOTORB_2,HIGH);
+    delay(angle*12);
+    Serial.println("Stop");
+    digitalWrite(ENA,LOW);
+    digitalWrite(ENB,LOW);
+    digitalWrite(MOTORA_1,LOW);
+    digitalWrite(MOTORA_2,LOW);
+    digitalWrite(MOTORB_1,LOW);
+    digitalWrite(MOTORB_2,LOW);
+  }
+  void rightside(int angle)
+  {Serial.println("Turning right");
+    digitalWrite(ENA,HIGH);
+    digitalWrite(ENB,HIGH);
+    digitalWrite(MOTORA_1,LOW);
+    digitalWrite(MOTORA_2,HIGH);
+    digitalWrite(MOTORB_1,HIGH);
+    digitalWrite(MOTORB_2,LOW);
+    delay(angle*12);
+    Serial.println("Stop");
+    digitalWrite(ENA,LOW);
+    digitalWrite(ENB,LOW);
+    digitalWrite(MOTORA_1,LOW);
+    digitalWrite(MOTORA_2,LOW);
+    digitalWrite(MOTORB_1,LOW);
+    digitalWrite(MOTORB_2,LOW);
+   }
+   void frontside(int angle)
+   {Serial.println("Moving forward");
+    digitalWrite(ENA,HIGH);
+    digitalWrite(ENB,HIGH);
+    digitalWrite(MOTORA_1,LOW);
+    digitalWrite(MOTORA_2,HIGH);
+    digitalWrite(MOTORB_1,LOW);
+    digitalWrite(MOTORB_2,HIGH);
+    delay(angle*71.4283);
+    Serial.println("Stop");
+    digitalWrite(ENA,LOW);
+    digitalWrite(ENB,LOW);
+    digitalWrite(MOTORA_1,LOW);
+    digitalWrite(MOTORA_2,LOW);
+    digitalWrite(MOTORB_1,LOW);
+    digitalWrite(MOTORB_2,LOW);
+   }
+    void backside(int angle)
+    {
+      Serial.println("Moving back");
+    digitalWrite(ENA,HIGH);
+    digitalWrite(ENB,HIGH);
+    digitalWrite(MOTORA_1,HIGH);
+    digitalWrite(MOTORA_2,LOW);
+    digitalWrite(MOTORB_1,HIGH);
+    digitalWrite(MOTORB_2,LOW);
+    delay(angle*71.4283);
+    Serial.println("Stop");
+    digitalWrite(ENA,LOW);
+    digitalWrite(ENB,LOW);
+    digitalWrite(MOTORA_1,LOW);
+    digitalWrite(MOTORA_2,LOW);
+    digitalWrite(MOTORB_1,LOW);
+    digitalWrite(MOTORB_2,LOW);
+    }
