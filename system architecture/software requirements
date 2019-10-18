@@ -1,0 +1,10 @@
+ IFTTT account
+ Adafruit.io account
+ Arduino IDE
+ Google Assistant Application
+ 
+Libraries :
+      ESP8266WiFi  
+      ArduinoHTTPClient
+      ArduinoMQTTClient
+      AdafruitMQTT
