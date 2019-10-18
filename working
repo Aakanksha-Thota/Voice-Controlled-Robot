@@ -1,0 +1,9 @@
+•	Instructions from the user are taken by Google assistant application. They have to be in the following way:  
+  move forward/back  #	             ( # is distance in cm) 	
+  turn left/right  #  degrees        ( #  is angle)           
+•	These instructions are sent to IFTTT platform and a response of “moving” or "turning" is sent back to Google assistant application.
+•	This instruction is now sent to the Adafruit IO feed “voice commands”.
+•	Since Wemos D1 mini(ESP8266) has an access to this adafruit IO account, this command is now read by the microcontroller. 
+•	Now according to the instruction read, signals determined by the code are sent to the motor driver.
+•	This motor driver controls the motors accordingly.
+•	Hence the robot moves as per the given instruction.
